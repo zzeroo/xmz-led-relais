@@ -5,3 +5,4 @@ authors = ["zzeroo <co@zzeroo.com>"]
 
 [dependencies]
 bit-vec = "0.4.3"
+sysfs_gpio = { git = "https://github.com/zzeroo/rust-sysfs-gpio.git" }
