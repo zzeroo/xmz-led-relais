@@ -1,0 +1,7 @@
+[package]
+name = "xmz_led_relais"
+version = "0.1.0"
+authors = ["zzeroo <co@zzeroo.com>"]
+
+[dependencies]
+bit-vec = "0.4.3"
