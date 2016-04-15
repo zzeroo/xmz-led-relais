@@ -1,16 +1,21 @@
-extern crate bit_vec;
 extern crate sysfs_gpio;
 
-use bit_vec::BitVec;
 use sysfs_gpio::{Direction, Pin};
 
+use super::*;
 
-pub fn shift_out(oe_pin: u64, ds_pin: u64, clock_pin: u64, latch_pin: u64, data: bit_vec::BitVec) {
-    let oe_pin = Pin::new(oe_pin);
-    let ds_pin = Pin::new(ds_pin);
-    let clock_pin = Pin::new(clock_pin);
-    let latch_pin = Pin::new(latch_pin);
-    let data = data;
+#[derive(Debug,PartialEq)]
+enum Bitorder {
+    LSBFIRST,
+    MSBFIRST,
+}
+
+pub fn shift_out(leds: LED) {
+    let oe_pin = Pin::new(leds.oe_pin);
+    let ds_pin = Pin::new(leds.ds_pin);
+    let clock_pin = Pin::new(leds.clock_pin);
+    let latch_pin = Pin::new(leds.latch_pin);
+    let data = leds.data;
 
     // try to export the needed pins, panic if it fails
     match oe_pin.export() {
@@ -32,34 +37,50 @@ pub fn shift_out(oe_pin: u64, ds_pin: u64, clock_pin: u64, latch_pin: u64, data:
 
     // set pin directions
     match oe_pin.set_direction(Direction::Out) {
-        Ok(()) => (), // !OE pin low == Shift register enabled.
+        Ok(()) => { let _ = oe_pin.set_value(0); }, // !OE pin low == Shift register enabled.
         Err(err) => println!("Could not set direction of DATA pin: {}", err),
     }
-    //oe_pin.set_value(0)
+
     match ds_pin.set_direction(Direction::Out) {
-        Ok(()) => (),
+        Ok(()) => { let _ = ds_pin.set_value(0); },
         Err(err) => println!("Could not set direction of DATA pin: {}", err),
     }
-    //ds_pin.set_value(0)
+
     match clock_pin.set_direction(Direction::Out) {
-        Ok(()) => (),
+        Ok(()) => { let _ = clock_pin.set_value(0); },
         Err(err) => println!("Could not set direction of CLOCK pin: {}", err),
     }
-    // clock_pin.set_value(0)
+
     match latch_pin.set_direction(Direction::Out) {
-        Ok(()) => (),
+        Ok(()) => { let _ = latch_pin.set_value(0); },
         Err(err) => println!("Could not set direction of LATCH pin: {}", err),
     }
-    // latch_pin.set_value(0)
+
 
     // Clock in data
-    for x in data.iter() {
-        ds_pin.set_value(x as u8);
-        clock_pin.set_value(1);
-        clock_pin.set_value(0);
+    let order: Bitorder = Bitorder::LSBFIRST;
+
+    if order == Bitorder::MSBFIRST {
+        for i in 0..23 {
+            match (data >> i) & 1 {
+                1 => { ds_pin.set_value(1); },
+                _ => { ds_pin.set_value(0); },
+            }
+            let _ = clock_pin.set_value(1);
+            let _ = clock_pin.set_value(0);
+        }
+    } else {
+        for i in (0..23).rev() {
+            match (data >> i) & 1 {
+                1 => { ds_pin.set_value(1); },
+                _ => { ds_pin.set_value(0); },
+            }
+            let _ = clock_pin.set_value(1);
+            let _ = clock_pin.set_value(0);
+        }
     }
     // Latch out
-    latch_pin.set_value(1);
-    latch_pin.set_value(0);
+    let _ = latch_pin.set_value(1);
+    let _ = latch_pin.set_value(0);
 
 }

@@ -1,7 +1,4 @@
-extern crate bit_vec;
 extern crate sysfs_gpio;
-
-use bit_vec::BitVec;
 
 pub mod shift_register;
 
@@ -12,13 +9,12 @@ pub struct LED {
     pub ds_pin: u64,
     pub clock_pin: u64,
     pub latch_pin: u64,
-    pub data: bit_vec::BitVec,
+    pub data: u32,
 }
 
 impl Default for LED {
     fn default() -> LED {
-        let data = BitVec::from_bytes(&[0u8, 0u8, 0u8]);
-        LED { oe_pin: 276, ds_pin: 38, clock_pin: 44, latch_pin: 40, data: data }
+        LED { oe_pin: 276, ds_pin: 38, clock_pin: 44, latch_pin: 40, data: 0 }
     }
 }
 
@@ -27,7 +23,11 @@ impl LED {
         LED { ..Default::default() }
     }
 
+    pub fn set(&mut self, led_num: usize) {
+        self.data |= 1 << led_num - 1;
+    }
+
     pub fn set_all(&mut self) {
-        self.data.set_all();
+        self.data = 0b11111111_11111111_11111111_11111111;
     }
 }
